@@ -35,44 +35,43 @@ def chunker(seq, size):
         yield seq[pos : pos + size]
 
 from textblob import TextBlob
+import nltk, re
 
-# quick keyword lists → category
-CATS = {
-    "flavor": ["taste", "flavor", "sabor"],
-    "price": ["price", "cost", "expensive", "cheap"],
-    "packaging": ["package", "box", "bottle", "packaging", "empaque"],
-    "effect": ["energy", "sleep", "weight", "feel", "result"],
+# ------------- simple rule‑based categoriser -------------
+CATEGORY_KEYWORDS = {
+    "flavor":   {"flavor", "taste", "flavour", "sabor"},
+    "price":    {"price", "cost", "expensive", "cheap", "pricing"},
+    "packaging":{"package", "packaging", "bottle", "jar", "box"},
+    "effect":   {"effect", "result", "energy", "feel", "felt"},
+    "delivery": {"delivery", "shipping", "arrived", "late"},
 }
 
-def _detect_category(text: str) -> str:
-    text_l = text.lower()
-    for cat, words in CATS.items():
-        if any(w in text_l for w in words):
+def detect_category(text: str) -> str:
+    for cat, kw in CATEGORY_KEYWORDS.items():
+        if any(k in text for k in kw):
             return cat
     return "other"
 
-def _sentiment_polarity(text: str) -> str:
-    p = TextBlob(text).sentiment.polarity
-    if p > 0.15:
-        return "positive"
-    if p < -0.15:
-        return "negative"
-    return "neutral"
-
+# ----------------- your replacement batch analyser -----------------
 def analyse_batch(batch):
     """
-    Offline analyse_batch: returns TextBlob sentiment and a keyword-based
-    category so the pipeline works without OpenAI.
+    Lightweight offline analysis:
+    • sentiment via TextBlob polarity  (>0.1 pos / <‑0.1 neg / else neutral)
+    • category via simple keyword lookup
+    Returns a list of dicts aligned 1‑to‑1 with *batch*.
     """
-    results = []
-    for answer in batch:
-        results.append(
-            {
-                "sentiment": _sentiment_polarity(answer),
-                "category": _detect_category(answer),
-            }
-        )
-    return results
+    analysed = []
+    for raw in batch:
+        txt = normalise(raw)
+        # sentiment
+        polarity = TextBlob(txt).sentiment.polarity
+        if polarity >  0.10: sentiment = "positive"
+        elif polarity < -0.10: sentiment = "negative"
+        else:                  sentiment = "neutral"
+        # category
+        category = detect_category(txt)
+        analysed.append({"sentiment": sentiment, "category": category})
+    return analysed
 
 # ------------------------- PIPELINE ------------------------
 
