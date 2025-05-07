@@ -35,16 +35,11 @@ def chunker(seq, size):
         yield seq[pos : pos + size]
 
 def analyse_batch(batch):
-    user = "\n".join(batch)
-    resp = openai.chat.completions.create(
-        model="gpt-3.5-turbo",
-        temperature=0.0,
-        messages=[{"role": "system", "content": SYSTEM},
-                  {"role": "user", "content": user}],
-    )
-    # response is a JSON per line
-    lines = resp.choices[0].message.content.splitlines()
-    return [json.loads(l) for l in lines]
+    """
+    Offline stub: returns neutral sentiment and a generic 'misc' category
+    for every answer so the rest of the pipeline can run without OpenAI.
+    """
+    return [{"sentiment": "neutral", "category": "misc"} for _ in batch]
 
 # ------------------------- PIPELINE ------------------------
 
