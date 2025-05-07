@@ -27,7 +27,7 @@ For each answer, reply with compact JSON:
 def normalise(text: str) -> str:
     """lower‑case, strip punctuation, collapse spaces"""
     text = text.lower()
-    text = re.sub(r"[^\\w\\s]", " ", text)
+    text = re.sub(r"[^\w\s]", " ", text)  
     return re.sub(r"\\s+", " ", text).strip()
 
 def chunker(seq, size):
