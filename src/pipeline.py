@@ -53,24 +53,40 @@ def detect_category(text: str) -> str:
     return "other"
 
 # ----------------- your replacement batch analyser -----------------
+# -------- sentiment & category helpers --------
+from nltk.sentiment import SentimentIntensityAnalyzer
+SIA = SentimentIntensityAnalyzer()
+
+CATEGORY_KEYWORDS = {
+    "flavor":   {"flavor", "taste", "flavour", "sabor"},
+    "price":    {"price", "cost", "expensive", "cheap"},
+    "packaging":{"package", "packaging", "bottle", "jar", "box"},
+    "effect":   {"effect", "result", "energy", "feel", "felt", "benefit"},
+    "delivery": {"delivery", "shipping", "arrived", "late", "delay"},
+}
+
+def detect_category(text: str) -> str:
+    for cat, kws in CATEGORY_KEYWORDS.items():
+        if any(k in text for k in kws):
+            return cat
+    return "other"
+
 def analyse_batch(batch):
-    """
-    Lightweight offline analysis:
-    • sentiment via TextBlob polarity  (>0.1 pos / <‑0.1 neg / else neutral)
-    • category via simple keyword lookup
-    Returns a list of dicts aligned 1‑to‑1 with *batch*.
-    """
+    """VADER sentiment + keyword category (offline)."""
     analysed = []
     for raw in batch:
         txt = normalise(raw)
-        # sentiment
-        polarity = TextBlob(txt).sentiment.polarity
-        if polarity >  0.10: sentiment = "positive"
-        elif polarity < -0.10: sentiment = "negative"
-        else:                  sentiment = "neutral"
-        # category
-        category = detect_category(txt)
-        analysed.append({"sentiment": sentiment, "category": category})
+        score = SIA.polarity_scores(txt)["compound"]
+        if score >  0.05:
+            sentiment = "positive"
+        elif score < -0.05:
+            sentiment = "negative"
+        else:
+            sentiment = "neutral"
+        analysed.append(
+            {"sentiment": sentiment,
+             "category":  detect_category(txt)}
+        )
     return analysed
 
 # ------------------------- PIPELINE ------------------------
