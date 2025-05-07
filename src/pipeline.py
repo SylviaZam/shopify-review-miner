@@ -34,12 +34,45 @@ def chunker(seq, size):
     for pos in range(0, len(seq), size):
         yield seq[pos : pos + size]
 
+from textblob import TextBlob
+
+# quick keyword lists → category
+CATS = {
+    "flavor": ["taste", "flavor", "sabor"],
+    "price": ["price", "cost", "expensive", "cheap"],
+    "packaging": ["package", "box", "bottle", "packaging", "empaque"],
+    "effect": ["energy", "sleep", "weight", "feel", "result"],
+}
+
+def _detect_category(text: str) -> str:
+    text_l = text.lower()
+    for cat, words in CATS.items():
+        if any(w in text_l for w in words):
+            return cat
+    return "other"
+
+def _sentiment_polarity(text: str) -> str:
+    p = TextBlob(text).sentiment.polarity
+    if p > 0.15:
+        return "positive"
+    if p < -0.15:
+        return "negative"
+    return "neutral"
+
 def analyse_batch(batch):
     """
-    Offline stub: returns neutral sentiment and a generic 'misc' category
-    for every answer so the rest of the pipeline can run without OpenAI.
+    Offline analyse_batch: returns TextBlob sentiment and a keyword-based
+    category so the pipeline works without OpenAI.
     """
-    return [{"sentiment": "neutral", "category": "misc"} for _ in batch]
+    results = []
+    for answer in batch:
+        results.append(
+            {
+                "sentiment": _sentiment_polarity(answer),
+                "category": _detect_category(answer),
+            }
+        )
+    return results
 
 # ------------------------- PIPELINE ------------------------
 
