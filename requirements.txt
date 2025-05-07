@@ -6,3 +6,6 @@ openai
 pyarrow>=15.0
 textblob
 nltk
+
+textblob
+nltk
