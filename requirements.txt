@@ -3,3 +3,4 @@ scikit-learn
 google-cloud-bigquery
 python-dotenv
 openai
+pyarrow>=15.0
